@@ -7,19 +7,15 @@ resource "aws_launch_template" "example" {
         # associate_public_ip_address = true
     }
 
-    user_data = base64encode(
-        templatefile("${path.module}/user-data.sh", {
-            server_port = var.server_port
-        })
-    )
+    user_data = base64encode(var.user_data)
 
     # Required when using a launch configuration with an auto scaling group
     lifecycle {
         create_before_destroy = true
-        precondition {
-            condition     = data.aws_ec2_instance_type.instance.free_tier_eligible
-            error_message = "${var.instance_type} is not part of the AWS Free Tier!"
-        }
+        # precondition {
+        #     condition     = data.aws_ec2_instance_type.instance.free_tier_eligible
+        #     error_message = "${var.instance_type} is not part of the AWS Free Tier!"
+        # }
     }
 }
 
@@ -36,10 +32,10 @@ resource "aws_autoscaling_group" "example" {
     
     # (t2.micro) is not supported in your requested Availability Zone (ap-northeast-2b)
     # vpc_zone_identifier = data.aws_subnets.default.ids # distribue instances evenly
-    vpc_zone_identifier = local.subnet_ids_filtered
+    vpc_zone_identifier = var.subnet_ids
 
-    target_group_arns = [aws_lb_target_group.asg.arn]
-    health_check_type = "ELB"
+    target_group_arns = var.target_group_arns
+    health_check_type = var.health_check_type
 
     min_size = var.min_size
     max_size = var.max_size
